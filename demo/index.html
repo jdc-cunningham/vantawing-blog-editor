@@ -15,44 +15,34 @@
         </div>
     </div>
     <script src="../dist/js/medium-editor.js"></script>
+    <script src="./js/axios.min.js"></script>
     <script>
         var editor = new MediumEditor('.editable', {
             buttonLabels: 'fontawesome'
         });
 
-        // from MDN plain AJAX POST
-        function postAjax(url, data, success) {
-            var params = typeof data == 'string' ? data : Object.keys(data).map(
-                    function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]) }
-                ).join('&');
-
-            var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-            xhr.open('POST', url);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState>3 && xhr.status==200) { success(xhr.responseText); }
-            };
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.send(params);
-            return xhr;
-        }
-
-        const postCallback = (response) => {
-            console.log('post cb', response);
-        };
-
         // custom code for saving on change
         let editTimeout;
-        editor.subscribe('editableInput', function(event, editable) {
-            console.log('here', event, editable);
+
+        const savePost = (event, editable) => {
             clearTimeout(editTimeout);
-            setTimeout(() => {
-                // get body content
+            editTimeout = setTimeout(() => {
                 const contentHtml = document.getElementById('container').innerHTML;
-                console.log(contentHtml);
-                postAjax('http://localhost:5000/save-post', contentHtml, postCallback);
+                // cheat with axios ha easier than plain XHR
+                axios.post('http://localhost:5000/save-post', {
+                        content: contentHtml,
+                    })
+                    .then(function (response) {
+                        console.log(response);
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
             }, 1000);
-        });
+        };
+
+        editor.subscribe('editableInput', savePost);
+        editor.subscribe('editableDrag', savePost);
     </script>
 </body>
 </html>
